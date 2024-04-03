@@ -43,7 +43,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tf_backend_bucket
     apply_server_side_encryption_by_default {
       sse_algorithm = "aws:kms"
     }
-    
+
   }
 }
 

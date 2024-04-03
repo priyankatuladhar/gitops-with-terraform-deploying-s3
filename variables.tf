@@ -11,10 +11,10 @@ variable "bucket_name" {
 variable "default_tags" {
   description = "Default tags to apply to resources"
   type        = map(string)
-  default     = {
-    Name     = "Priyanka Gitops assignment tags"
-    Creator  = "priyankatuladharmail@gmail.com"
+  default = {
+    Name      = "Priyanka Gitops assignment tags"
+    Creator   = "priyankatuladharmail@gmail.com"
     Deletable = "Yes"
-    Project  = "Intern"
+    Project   = "Intern"
   }
 }

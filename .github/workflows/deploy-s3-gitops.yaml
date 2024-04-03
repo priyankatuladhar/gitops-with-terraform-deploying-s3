@@ -4,10 +4,8 @@ env:
   package_name: gitops
 
 on:
-  workflow_dispatch:
-    push:
-      branches:
-        - main
+  push:
+    branches: [main]
 
         
 

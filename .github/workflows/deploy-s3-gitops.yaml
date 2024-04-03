@@ -79,13 +79,12 @@ jobs:
       - name: Prepare artifact
         id: prep
         run: |
-          BUILD_NUM=$(echo $GITHUB_RUN_NUMBER)
+          BUILD_NUM=$GITHUB_RUN_NUMBER
           BUILD_ID=$(echo $GITHUB_SHA | head -c7)
           
-          if [[ ${{ github.event.pull_request.merged }} == 'true' ]]; then
-            VERSION=${SCOPE}@v${RELEASE_VERSION}
-          else
-            VERSION=${SCOPE}@v${RELEASE_VERSION}+build.${BUILD_NUM}.${BUILD_ID}
+          VERSION=${SCOPE}@v${RELEASE_VERSION}
+          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+            VERSION+=+build.${BUILD_NUM}.${BUILD_ID}
           fi
           
           ARTIFACT_NAME=${VERSION}.zip
@@ -94,6 +93,7 @@ jobs:
           ls -al
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+
 
         env:
           SCOPE: ${{ env.package_name }}

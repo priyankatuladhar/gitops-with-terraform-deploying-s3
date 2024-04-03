@@ -13,11 +13,11 @@ provider "aws" {
 }
 
 terraform{
-    backend "remote" {
-        region = var.region
-        bucket = var.bucket_name
-        dynamodb_table = "terraform_state"
-        key            = "terraform.tfstate"
+    backend "local" {
+        
+        path            = "./statefile.tfstate"
+        
+        
     }
 }
 

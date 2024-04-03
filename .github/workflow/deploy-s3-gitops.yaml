@@ -4,15 +4,9 @@ env:
   package_name: gitops
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Environment
-        required: true
-        type: choice
-        options:
-          - 'dev'
-          - 'prod'
+  push: 
+    branches:
+      - main 
 
   pull_request:
     types: [synchronize, closed, opened]

@@ -23,10 +23,10 @@ terraform {
 
 resource "aws_s3_bucket" "prii_bucket" {
   bucket = var.bucket_name
-
-  tags = merge(default_tags, {
+  tags = merge(var.default_tags, {
     Name = "My bucket Priyanka"
   })
+
 }
 
 //not enabled versioning because deletion takes confusion
@@ -38,11 +38,14 @@ resource "aws_s3_bucket_object_lock_configuration" "tf_backend_bucket_object_loc
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "tf_backend_bucket_sse" {
-  bucket = aws_s3_bucket.bucket.id
+  bucket = aws_s3_bucket.prii_bucket.id
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "aws:kms"
     }
+    tags = merge(var.default_tags, {
+      "Name" = "s3 kms"
+    })
   }
 }
 
@@ -55,7 +58,7 @@ resource "aws_dynamodb_table" "tf_backend_bucket_state_lock" {
     name = "LockID"
     type = "S"
   }
-  tags = {
+  tags = merge(var.default_tags, {
     "Name" = "DynamoDB Terraform State Lock Table"
-  }
+  })
 }

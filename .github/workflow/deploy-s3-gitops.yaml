@@ -4,14 +4,10 @@ env:
   package_name: gitops
 
 on:
-  push: 
-    branches:
-      - main 
-
-  pull_request:
-    types: [synchronize, closed, opened]
-    branches:
-      - main
+  workflow_dispatch:
+    push:
+      branches:
+        - main
 
 jobs:
   resolve-env:

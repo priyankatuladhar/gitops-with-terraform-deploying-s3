@@ -62,59 +62,66 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-
-      - name: Terraform apply
-        # if: github.event.pull_request.merged || github.event_name == 'workflow_dispatch'
-        run: terraform apply --auto-approve
+      - name: Terraform destroy
+        run: |
+          terraform init
+          terraform destroy --auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      # - name: Terraform apply
+      #   # if: github.event.pull_request.merged || github.event_name == 'workflow_dispatch'
+      #   run: terraform apply --auto-approve
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
-      - name: Setup semver bash
-        run: |
-          sudo curl https://raw.githubusercontent.com/fsaintjacques/semver-tool/3.0.0/src/semver -o /usr/local/bin/semver && sudo chmod +x /usr/local/bin/semver
-          semver --version
+      # - name: Setup semver bash
+      #   run: |
+      #     sudo curl https://raw.githubusercontent.com/fsaintjacques/semver-tool/3.0.0/src/semver -o /usr/local/bin/semver && sudo chmod +x /usr/local/bin/semver
+      #     semver --version
 
-      - name: Prepare artifact
-        id: prep
-        run: |
-          BUILD_NUM=$GITHUB_RUN_NUMBER
-          BUILD_ID=$(echo $GITHUB_SHA | head -c7)
+      # - name: Prepare artifact
+      #   id: prep
+      #   run: |
+      #     BUILD_NUM=$GITHUB_RUN_NUMBER
+      #     BUILD_ID=$(echo $GITHUB_SHA | head -c7)
           
-          VERSION=${SCOPE}@v${RELEASE_VERSION}
-          if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
-            VERSION+=+build.${BUILD_NUM}.${BUILD_ID}
-          fi
+      #     VERSION=${SCOPE}@v${RELEASE_VERSION}
+      #     if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
+      #       VERSION+=+build.${BUILD_NUM}.${BUILD_ID}
+      #     fi
           
-          ARTIFACT_NAME=${VERSION}.zip
-          zip -r dist *.tf
-          mv dist.zip ${ARTIFACT_NAME}
-          ls -al
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+      #     ARTIFACT_NAME=${VERSION}.zip
+      #     zip -r dist *.tf
+      #     mv dist.zip ${ARTIFACT_NAME}
+      #     ls -al
+      #     echo "version=${VERSION}" >> $GITHUB_OUTPUT
+      #     echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
 
 
-        env:
-          SCOPE: ${{ env.package_name }}
-          RELEASE_VERSION: ${{ steps.get-version.outputs.new_version }}
+      #   env:
+      #     SCOPE: ${{ env.package_name }}
+      #     RELEASE_VERSION: ${{ steps.get-version.outputs.new_version }}
 
-      - name: Push Tag
-        #if: github.event.pull_request.merged
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v5.6
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          custom_tag: ${{ steps.prep.outputs.version }}
-          tag_prefix: ""
+      # - name: Push Tag
+      #   #if: github.event.pull_request.merged
+      #   id: tag_version
+      #   uses: mathieudutour/github-tag-action@v5.6
+      #   with:
+      #     github_token: ${{ secrets.GH_TOKEN }}
+      #     custom_tag: ${{ steps.prep.outputs.version }}
+      #     tag_prefix: ""
 
-      - name: Create release
-        #if: github.event.pull_request.merged
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GH_TOKEN }}"
-          prerelease: false
-          title: ${{ steps.prep.outputs.version }}
-          automatic_release_tag: ${{ steps.prep.outputs.version }}
-          files: |
-            ${{ steps.prep.outputs.artifact_name }}
+      # - name: Create release
+      #   #if: github.event.pull_request.merged
+      #   uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GH_TOKEN }}"
+      #     prerelease: false
+      #     title: ${{ steps.prep.outputs.version }}
+      #     automatic_release_tag: ${{ steps.prep.outputs.version }}
+      #     files: |
+      #       ${{ steps.prep.outputs.artifact_name }}

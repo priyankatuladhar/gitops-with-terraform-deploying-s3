@@ -86,17 +86,18 @@ jobs:
           BUILD_ID=$(echo $GITHUB_SHA | head -c7)
 
           if [[ ${{ github.event.pull_request.merged }} == 'true' ]]; then
-            VERSION=${SCOPE}@v${RELEASE_VERSION}
+          VERSION=${SCOPE}@v${RELEASE_VERSION}
           else
-            VERSION=${SCOPE}@v${RELEASE_VERSION}+build.${BUILD_NUM}.${BUILD_ID}
+          VERSION=${SCOPE}@v${RELEASE_VERSION}+build.${BUILD_NUM}.${BUILD_ID}
           fi
-
+          
           ARTIFACT_NAME=${VERSION}.zip
-          zip dist -r *.tf
+          zip -r dist *.tf
           mv dist.zip ${ARTIFACT_NAME}
           ls -al
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+
         env:
           SCOPE: ${{ env.package_name }}
           RELEASE_VERSION: ${{ steps.get-version.outputs.new_version }}

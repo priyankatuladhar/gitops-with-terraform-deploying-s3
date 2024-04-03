@@ -1,31 +1,31 @@
 provider "aws" {
-    region = var.region
+  region = var.region
 
-    //tags I can use anywhere in this file
-    default_tags {
-        tags = {
-            Name ="Priyanka Gitops assignment tags"
-            Creator = "priyankatuladharmail@gmail.com"
-            Deletable = "Yes"
-            Project = "Intern"
-        }
+  //tags I can use anywhere in this file
+  default_tags {
+    tags = {
+      Name      = "Priyanka Gitops assignment tags"
+      Creator   = "priyankatuladharmail@gmail.com"
+      Deletable = "Yes"
+      Project   = "Intern"
     }
+  }
 }
 
-terraform{
-    backend "local" {
-        
-        path            = "./statefile.tfstate"
-        
-        
-    }
+terraform {
+  backend "local" {
+
+    path = "./statefile.tfstate"
+
+
+  }
 }
 
 resource "aws_s3_bucket" "prii_bucket" {
   bucket = var.bucket_name
 
   tags = merge(default_tags, {
-    Name        = "My bucket Priyanka"
+    Name = "My bucket Priyanka"
   })
 }
 

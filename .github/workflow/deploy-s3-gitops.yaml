@@ -9,6 +9,8 @@ on:
       branches:
         - main
 
+        
+
 jobs:
   resolve-env:
     runs-on: ubuntu-latest

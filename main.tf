@@ -29,13 +29,7 @@ resource "aws_s3_bucket" "bucket" {
 
 }
 
-//not enabled versioning because deletion takes confusion
 
-resource "aws_s3_bucket_object_lock_configuration" "tf_backend_bucket_object_lock" {
-  depends_on          = [aws_s3_bucket.bucket]
-  bucket              = aws_s3_bucket.bucket.id
-  object_lock_enabled = "Enabled"
-}
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "tf_backend_bucket_sse" {
   bucket = aws_s3_bucket.bucket.id

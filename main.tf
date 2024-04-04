@@ -11,7 +11,6 @@ provider "aws" {
     }
   }
 }
-
 terraform {
   backend "s3" {
     bucket         = "priyanka-terraform-gitops"
@@ -22,26 +21,26 @@ terraform {
 }
 
 locals {
-  bucket_name_new = "${var.s3_dist_bucket}-${terraform.workspace}"
+  bucket_name_new = "${var.bucket_name}-${terraform.workspace}"
 }
-    # path = "./statefile.tfstate"
 
-resource "aws_s3_bucket" "bucket" {
+# path = "./statefile.tfstate"
+
+
+resource "aws_s3_bucket" "tf_backend_bucket" {
   bucket = var.bucket_name
-  tags = merge(var.default_tags, {
-    Name = "My bucket Priyanka"
-  })
 }
 
-resource "aws_s3_bucket_versioning" "frontend_dist_versioning" {
-  bucket = aws_s3_bucket.bucket.id
+resource "aws_s3_bucket_versioning" "tf_backend_bucket_versioning" {
+  bucket = aws_s3_bucket.tf_backend_bucket.id
   versioning_configuration {
     status = "Enabled"
   }
 }
 
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "tf_backend_bucket_sse" {
-  bucket = aws_s3_bucket.bucket.id
+  bucket = aws_s3_bucket.tf_backend_bucket.id
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "aws:kms"

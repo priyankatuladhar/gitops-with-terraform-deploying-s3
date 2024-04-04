@@ -5,7 +5,7 @@ variable "region" {
 }
 variable "bucket_name" {
   type        = string
-  default     = "terraformwithgitopsprideploys3frontend1.0.0"
+  default     = "terraformwithgitopsprideploys3frontend"
   description = "bucket name for gitops"
 }
 variable "default_tags" {

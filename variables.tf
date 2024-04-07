@@ -16,7 +16,7 @@ variable "default_tags" {
 }
 
 variable "tf_backend_bucket_name" {
-  default = "terraformwithgitopsprideploys3frontendpriyanka"
+  default = "terraformwithgitopsprideploys3frontendpriyanka1.0"
 }
 
 variable "devops_interns_repo_name" {

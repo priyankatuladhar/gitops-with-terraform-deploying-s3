@@ -11,9 +11,10 @@ provider "aws" {
     }
   }
 }
+
 terraform {
   backend "s3" {
-    bucket         = "terraformwithgitopsprideploys3frontend"
+    bucket         = "pri-bucket-09-09-09" // Update bucket name here
     key            = "terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "pri-tf-lockfile"
@@ -24,11 +25,14 @@ locals {
   bucket_name_new = "${var.bucket_name}-${terraform.workspace}"
 }
 
-# path = "./statefile.tfstate"
-
-
 resource "aws_s3_bucket" "tf_backend_bucket" {
-  bucket = var.bucket_name
+  bucket = var.bucket_name // Use local variable here
+  tags = {
+    Name      = "Terraform Backend Bucket"
+    Creator   = "priyankatuladharmail@gmail.com"
+    Deletable = "Yes"
+    Project   = "Intern"
+  }
 }
 
 resource "aws_s3_bucket_versioning" "tf_backend_bucket_versioning" {
@@ -37,7 +41,6 @@ resource "aws_s3_bucket_versioning" "tf_backend_bucket_versioning" {
     status = "Enabled"
   }
 }
-
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "tf_backend_bucket_sse" {
   bucket = aws_s3_bucket.tf_backend_bucket.id

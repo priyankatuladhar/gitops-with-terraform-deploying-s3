@@ -1,27 +1,29 @@
-name: Infrastructure - Plan and do
+name: Infrastructure and Frontend CI/CD
 
 env:
-  package_name: gitops
+  artifact_name: frontend
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Environment
+        description: 'Environment to deploy to'
         required: true
-        type: choice
         options:
           - 'dev'
           - 'prod'
 
   pull_request:
-    types: [synchronize, closed, opened]
+    types:
+      - "synchronize"
+      - "opened"
+      - "closed"
     branches:
-      - dev
       - main
+      - dev
 
 jobs:
-  resolve-env:
+  resolve-environment:
     runs-on: ubuntu-latest
     steps:
       - name: resolve environment
@@ -36,62 +38,88 @@ jobs:
       env_name: '${{ env.env_name }}'
 
   build:
-    name: Deploy and Release
+    name: Checkout Terraform Plan, Build and Test and Deploy Frontend
     runs-on: ubuntu-latest
-    needs: [resolve-env]
-    environment: ${{ needs.resolve-env.outputs.env_name }}
+    needs: resolve-environment
+    environment: ${{ needs.resolve-environment.outputs.env_name }}
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
       TF_IN_AUTOMATION: true
+
     steps:
-
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Configure terraform
+      - name: Configure Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.0
 
-      # - name: Terraform format
-      #   run: terraform fmt -check -recursive
+      - name: Terraform format
+        run: terraform fmt -check -recursive
 
       - name: Terraform init
         run: terraform init
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
       - name: Terraform validate
         run: terraform validate
+
+      - name: Switch to required workspace
+        run: |
+          echo "Switching to workspace $WORKSPACE"
+          terraform workspace select -or-create $WORKSPACE
+        env:
+          WORKSPACE: ${{ needs.resolve-environment.outputs.env_name}}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Terraform plan
         run: terraform plan
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-      
+
       - name: Terraform apply
         if: github.event.pull_request.merged || github.event_name == 'workflow_dispatch'
         run: terraform apply --auto-approve
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          yarn run build
+
+      - name: Configure AWS credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"
+        run: |
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set default.region $AWS_DEFAULT_REGION
+
+      - name: Upload S3
+        run: |
+          aws s3 cp frontend/dist s3://priyanka-gitops-ops-frontend-bucket-${{ needs.resolve-environment.outputs.env_name }} --recursive
 
       - name: Setup semver bash
         run: |
+          cd ..
           sudo curl https://raw.githubusercontent.com/fsaintjacques/semver-tool/3.0.0/src/semver -o /usr/local/bin/semver && sudo chmod +x /usr/local/bin/semver
           semver --version
-      
+
       - name: Get version
         id: get-version
         run: |
           git fetch --tags
-          last_version=$(git tag --sort=-version:refname | grep -P "^$package_name@v\d+.\d+.\d+$" | head -n 1 | cut -d v -f 2)
+          last_version=$(git tag --sort=-version:refname | grep -P "^$artifact_name@v\d+.\d+.\d+$" | head -n 1 | cut -d v -f 2)
 
           if [ -z "$last_version" ]; then
             new_version=1.0.0
@@ -105,8 +133,8 @@ jobs:
 
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
-      - name: Prepare artifact
-        id: prep
+      - name: Create artifact
+        id: create-artifact
         run: |
           BUILD_NUM=$(echo $GITHUB_RUN_NUMBER)
           BUILD_ID=$(echo $GITHUB_SHA | head -c7)
@@ -118,13 +146,13 @@ jobs:
           fi
 
           ARTIFACT_NAME=${VERSION}.zip
-          zip dist -r *.tf
-          mv dist.zip ${ARTIFACT_NAME}
+          zip frontend -r frontend/dist/*
+          mv frontend.zip ${ARTIFACT_NAME}
           ls -al
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
         env:
-          SCOPE: ${{ env.package_name }}
+          SCOPE: ${{ env.artifact_name }}
           RELEASE_VERSION: ${{ steps.get-version.outputs.new_version }}
 
       - name: Push Tag
@@ -133,7 +161,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v5.6
         with:
           github_token: ${{ secrets.GH_TOKEN }}
-          custom_tag: ${{ steps.prep.outputs.version }}
+          custom_tag: ${{ steps.create-artifact.outputs.version }}
           tag_prefix: ""
 
       - name: Create release
@@ -142,150 +170,7 @@ jobs:
         with:
           repo_token: "${{ secrets.GH_TOKEN }}"
           prerelease: false
-          title: ${{ steps.prep.outputs.version }}
-          automatic_release_tag: ${{ steps.prep.outputs.version }}
+          title: ${{ steps.create-artifact.outputs.version }}
+          automatic_release_tag: ${{ steps.create-artifact.outputs.version }}
           files: |
-            ${{ steps.prep.outputs.artifact_name }}
-
-
-# name: Infrastructure - Plan and apply
-
-# env:
-#   artifact_name: prifrontend
-
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       environment:
-#         description: Environment
-#         required: true
-#         type: choice
-#         options:
-#           - 'dev'
-#           - 'prod'
-
-#   pull_request:
-#     types: [synchronize, closed, opened]
-#     branches:
-#       - dev
-#       - main
-
-# jobs:
-#   resolve-env:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: resolve environment
-#         run: |
-#           branch_ref=${{ github.base_ref }}
-#           if [[ "$branch_ref" == "main" ]] || ${{ contains(github.event.inputs.environment, 'prod') }}; then
-#             echo "env_name=prod" >> $GITHUB_ENV
-#           else
-#             echo "env_name=dev" >> $GITHUB_ENV
-#           fi
-#     outputs:
-#       env_name: '${{ env.env_name }}'
-
-#   build:
-#     name: Deploy and Release
-#     runs-on: ubuntu-latest
-#     needs: [resolve-env]
-#     environment: ${{ needs.resolve-env.outputs.env_name }}
-#     env:
-#       GH_TOKEN: ${{ secrets.GH_TOKEN }}
-#       TF_IN_AUTOMATION: true
-#       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-#     steps:
-
-#       - name: Checkout
-#         uses: actions/checkout@v3
-
-#       - name: Configure terraform
-#         uses: hashicorp/setup-terraform@v2
-#         with:
-#           terraform_version: 1.5.0
-
-#       # - name: Terraform format
-#       #   run: terraform fmt -check -recursive
-
-#       - name: Terraform init
-#         run: terraform init
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-
-#       - name: Terraform validate
-#         run: terraform validate
-
-#       - name: Terraform plan
-#         run: terraform plan
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-#       - name: Terraform destroy
-#         run: |
-#           terraform init
-#           terraform destroy --auto-approve
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-#       - name: Terraform apply
-#         if: github.event.pull_request.merged || github.event_name == 'workflow_dispatch'
-#         run: terraform apply --auto-approve
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-
-#       - name: Setup semver bash
-#         run: |
-#           sudo curl https://raw.githubusercontent.com/fsaintjacques/semver-tool/3.0.0/src/semver -o /usr/local/bin/semver && sudo chmod +x /usr/local/bin/semver
-#           semver --version
-
-#       - name: Prepare artifact
-#         if: github.event.pull_request.merged
-#         id: prep
-#         run: |
-#           BUILD_NUM=$GITHUB_RUN_NUMBER
-#           BUILD_ID=$(echo $GITHUB_SHA | head -c7)
-          
-#           VERSION=${SCOPE}@v${RELEASE_VERSION}
-#           if [ "$GITHUB_EVENT_NAME" != "pull_request" ]; then
-#             VERSION+=+build.${BUILD_NUM}.${BUILD_ID}
-#           fi
-          
-#           ARTIFACT_NAME=${VERSION}.zip
-#           zip -r dist *.tf
-#           mv dist.zip ${ARTIFACT_NAME}
-#           ls -al
-#           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-#           echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
-
-
-#         env:
-#           SCOPE: ${{ env.package_name }}
-#           RELEASE_VERSION: ${{ steps.get-version.outputs.new_version }}
-
-#       - name: Push Tag
-#         if: github.event.pull_request.merged
-#         id: tag_version
-#         uses: mathieudutour/github-tag-action@v5.6
-#         with:
-#           github_token: ${{ secrets.GH_TOKEN }}
-#           custom_tag: ${{ steps.prep.outputs.version }}
-#           tag_prefix: ""
-
-#       - name: Create release
-#         if: github.event.pull_request.merged
-#         uses: "marvinpinto/action-automatic-releases@latest"
-#         with:
-#           repo_token: "${{ secrets.GH_TOKEN }}"
-#           prerelease: false
-#           title: ${{ steps.prep.outputs.version }}
-#           automatic_release_tag: ${{ steps.prep.outputs.version }}
-#           files: |
-#             ${{ steps.prep.outputs.artifact_name }}
+            ${{ steps.create-artifact.outputs.artifact_name }}

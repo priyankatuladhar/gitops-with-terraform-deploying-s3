@@ -1,0 +1,41 @@
+name: Terraform Drift Detection and Reconciliation
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
+
+jobs:
+  detect-drift:
+    name: Detect Drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -out=tfplan -detailed-exitcode || echo "Plan failed with exit code $?"
+    
+  reconcile-changes:
+    name: Reconcile Changes
+    if: ${{ steps.detect-drift.outputs.exitcode == '2' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve tfplan

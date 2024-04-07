@@ -1,7 +1,7 @@
 provider "aws" {
 	region = var.region
-  } 
-  terraform {
+  }
+ terraform {
 	backend "s3" {
 	  bucket         = "terraformwithgitopsprideploys3frontendpriyanka1.0"
 	  key            = "terraform.tfstate"

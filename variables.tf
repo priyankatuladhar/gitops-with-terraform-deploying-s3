@@ -3,11 +3,7 @@ variable "region" {
   default     = "us-east-1"
   description = "region variable"
 }
-variable "bucket_name" {
-  type        = string
-  default     = "terraformwithgitopsprideploys3frontend"
-  description = "bucket name for gitops"
-}
+
 variable "default_tags" {
   description = "Default tags to apply to resources"
   type        = map(string)
@@ -17,4 +13,13 @@ variable "default_tags" {
     Deletable = "Yes"
     Project   = "Intern"
   }
+}
+
+
+variable "tf_backend_bucket_name" {
+  default = "terraformwithgitopsprideploys3frontendpriyanka"
+}
+
+variable "devops_interns_repo_name" {
+  default = "gitops_demo_repo_priyanka"
 }

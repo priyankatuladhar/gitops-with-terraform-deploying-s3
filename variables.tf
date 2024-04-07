@@ -16,7 +16,7 @@ variable "default_tags" {
 }
 
 variable "bucket_name" {
-  default = "terraformwithgitopsprideploys3frontend"
+  default = "pri-bucket-09-09-09"
 }
 
 variable "devops_interns_repo_name" {

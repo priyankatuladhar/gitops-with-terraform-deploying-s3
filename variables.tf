@@ -15,7 +15,7 @@ variable "default_tags" {
   }
 }
 
-variable "s3_dist_bucket" {
+variable "tf_backend_bucket" {
   default = "priyanka-gitops-ops-frontend-bucket"
 }
 

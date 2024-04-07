@@ -15,7 +15,6 @@ variable "default_tags" {
   }
 }
 
-
 variable "tf_backend_bucket_name" {
   default = "terraformwithgitopsprideploys3frontendpriyanka"
 }

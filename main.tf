@@ -4,15 +4,21 @@ provider "aws" {
   
   terraform {
 	backend "s3" {
-	  bucket         = "lf-devops-gitops-terraform-state"
+	  bucket         = "terraformwithgitopsprideploys3frontendpriyanka"
 	  key            = "terraform.tfstate"
 	  region         = "us-east-1"
-	  dynamodb_table = "terraform_state"
+	  dynamodb_table = "terraform_state_pri"
 	}
   }
   
   resource "aws_s3_bucket" "tf_backend_bucket" {
 	bucket = var.tf_backend_bucket_name
+	tags = {
+	  "Name" = "DynamoDB Terraform State Lock Table priyanka"
+  	  "Creator"   = "priyankatuladharmail@gmail.com"
+	  "Deletable" = "Yes"
+	  "Project"   = "Intern"
+	}
   }
   
   resource "aws_s3_bucket_versioning" "tf_backend_bucket_versioning" {
@@ -38,7 +44,7 @@ provider "aws" {
   }
   
   resource "aws_dynamodb_table" "tf_backend_bucket_state_lock" {
-	name           = "terraform_state"
+	name           = "terraform_state_pri"
 	read_capacity  = 1
 	write_capacity = 1
 	hash_key       = "LockID"
@@ -47,13 +53,22 @@ provider "aws" {
 	  type = "S"
 	}
 	tags = {
-	  "Name" = "DynamoDB Terraform State Lock Table"
+	  "Name" = "DynamoDB Terraform State Lock Table priyanka"
+  	  "Creator"   = "priyankatuladharmail@gmail.com"
+	  "Deletable" = "Yes"
+	  "Project"   = "Intern"
 	}
   }
   
   resource "aws_codecommit_repository" "gitops_demo_repo" {
 	repository_name = var.devops_interns_repo_name
 	description     = "Created for \"GitOps with Terraform\" session"
+	tags = {
+	  "Name" = "DynamoDB Terraform State Lock Table priyanka"
+  	  "Creator"   = "priyankatuladharmail@gmail.com"
+	  "Deletable" = "Yes"
+	  "Project"   = "Intern"
+	}
   }
   
 // provider "aws" {

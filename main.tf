@@ -4,7 +4,7 @@ provider "aws" {
   
   terraform {
 	backend "s3" {
-	  bucket         = "terraformwithgitopsprideploys3frontendpriyanka"
+	  bucket         = "terraformwithgitopsprideploys3frontendpriyanka1.0"
 	  key            = "terraform.tfstate"
 	  region         = "us-east-1"
 	  dynamodb_table = "terraform_state_pri"
